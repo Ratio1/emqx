@@ -1,0 +1,29 @@
+[Unit]
+Description=EMQX MQTT broker (Docker)
+After=docker.service network.target
+Requires=docker.service
+
+[Service]
+#ExecStartPre=/usr/bin/docker stop -t 20 emqx
+
+ExecStartPre=/usr/bin/docker pull emqx/emqx:5.8.7
+
+# Run EMQX detached (-d) with restart policy and proper ports
+ExecStart=/usr/bin/docker run --rm -d --name emqx \
+  -p 8883:8883 -p 8084:8084 \
+  -v /opt/emqx/data:/opt/emqx/data \
+  -v /opt/emqx/etc:/opt/emqx/etc \
+  -v /opt/emqx/log:/opt/emqx/log \
+ # --restart=always \
+  emqx/emqx:5.8.7
+
+# Stop = graceful docker stop, then remove the container
+ExecStop=/usr/bin/docker stop -t 10 emqx
+ExecStopPost=/usr/bin/docker rm -f emqx
+
+# Let systemd think the service is up as long as the container is
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
