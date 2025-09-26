@@ -3,6 +3,13 @@
 #copy certs
 cp ./emqx_cert.crt /opt/emqx/etc/certs
 cp ./emqx_cert.key /opt/emqx/etc/certs
+cp ./emqx_cert.crt /opt/emqx/etc/certs/cert.pem
+cp ./emqx_cert.key /opt/emqx/etc/certs/key.pem
+
+#ensure log dir exists and is writeable
+mkdir /opt/emqx/log
+chown 777 /opt/emqx/log
+
 
 # install_emqx.sh
 cp ./emqx.service /etc/systemd/system/emqx.service
