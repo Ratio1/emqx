@@ -17,13 +17,19 @@ SYS_KEY="$KEY_DIR/emqx_cert.key"
 
 SITE=/etc/nginx/sites-available/emqx.conf
 
+
 echo "==> Using public IP  $SERVER_IP"
 
-### ---- 2. Install packages ----------------------------------------------
-apt-get update -qq
-apt-get install -y nginx openssl apache2-utils  # htpasswd lives here :contentReference[oaicite:1]{index=1}
-
-# ---- Kill the port-80 ï¿½defaultï¿½ listener -------------------------------
+#verify if nginx is already installed
+if command -v nginx >/dev/null 2>&1; then
+  echo "==> nginx is already installed. Skipping installation."
+else
+  ### ---- 2. Install packages ----------------------------------------------
+  echo "==> Installing nginx and dependencies"
+  apt-get update -qq
+  apt-get install -y nginx openssl apache2-utils  # htpasswd lives here :contentReference[oaicite:1]{index=1}
+fi
+#remove default nginx site if exists
 rm -f /etc/nginx/sites-enabled/default
 
 ### ---- 3. Generate self-signed certificate -------------------------------
@@ -40,7 +46,6 @@ install -Dm600 "$LOCAL_CRT" "$SYS_CRT"
 install -Dm600 "$LOCAL_KEY" "$SYS_KEY"
 echo "==> Installed certificate to $SYS_CRT"
 echo "==> Installed key         to $SYS_KEY"
-
 
 
 ### ---- 5. Write nginx vhost ---------------------------------------------
