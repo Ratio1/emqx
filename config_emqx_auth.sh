@@ -58,18 +58,7 @@ JSON
 
 # URL-encoded ID for authenticator: "password_based:built_in_database" -> "password_based%3Abuilt_in_database"
 AUTH_URL='http://127.0.0.1:18083/api/v5/authentication/password_based%3Abuilt_in_database'
-
-echo ">> Enabling built_in_database authenticator..."
-if [[ "$HTTP_CLIENT" = "curl" ]]; then
-  run_in "curl -sS -u '${KEY}:${SECRET}' -X PUT '${AUTH_URL}' -H 'Content-Type: application/json' -d '$(printf "%s" "$AUTH_JSON" | sed "s/'/'\"'\"'/g")'"
-else
-  # wget fallback
-  TMP=$(mktemp)
-  printf "%s" "$AUTH_JSON" > "$TMP"
-  run_in "wget -q --method=PUT --header='Content-Type: application/json' --user='${KEY}' --password='${SECRET}' --body-file='-' -O - '${AUTH_URL}' < '$TMP'"
-  rm -f "$TMP"
-fi
-echo
+run_in "curl -sS -u '${KEY}:${SECRET}' -X PUT '${AUTH_URL}' -H 'Content-Type: application/json' -d '$(printf "%s" "$AUTH_JSON" | sed "s/'/'\"'\"'/g")'"
 echo "   Authenticator applied."
 
 # Create or update user
@@ -80,42 +69,19 @@ JSON
 )
 
 echo ">> Creating or updating user '${USER_ID}'..."
-if [[ "$HTTP_CLIENT" = "curl" ]]; then
-  # Try GET
-  set +e
-  run_in "curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${USER_ID}'" | {
-    read -r CODE
-    set -e
-    if [[ "$CODE" = "200" ]]; then
-      echo "   User exists; updating password/superuser flag."
-      run_in "curl -sS -u '${KEY}:${SECRET}' -X PUT '${USERS_BASE}/${USER_ID}' -H 'Content-Type: application/json' -d '$(printf "%s" "$CREATE_PAYLOAD" | sed "s/'/'\"'\"'/g")'"
-      echo
-    else
-      echo "   Creating user."
-      run_in "curl -sS -u '${KEY}:${SECRET}' -X POST '${USERS_BASE}' -H 'Content-Type: application/json' -d '$(printf "%s" "$CREATE_PAYLOAD" | sed "s/'/'\"'\"'/g")'"
-      echo
-    fi
-  }
-else
-  # wget path (no easy status parsing) – attempt GET; if it fails we POST, else PUT
-  set +e
-  run_in "wget -q --user='${KEY}' --password='${SECRET}' -O - '${USERS_BASE}/${USER_ID}' >/dev/null"
-  EXISTS=$?
+set +e
+run_in "curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${USER_ID}'" | {
+  read -r CODE
   set -e
-  if [[ "$EXISTS" -eq 0 ]]; then
-    echo "   User exists; updating..."
-    TMP=$(mktemp); printf "%s" "$CREATE_PAYLOAD" > "$TMP"
-    run_in "wget -q --method=PUT --header='Content-Type: application/json' --user='${KEY}' --password='${SECRET}' --body-file='-' -O - '${USERS_BASE}/${USER_ID}' < '$TMP'"
-    rm -f "$TMP"
+  if [[ "$CODE" = "200" ]]; then
+    echo "   User exists; updating password/superuser flag."
+    run_in "curl -sS -u '${KEY}:${SECRET}' -X PUT '${USERS_BASE}/${USER_ID}' -H 'Content-Type: application/json' -d '$(printf "%s" "$CREATE_PAYLOAD" | sed "s/'/'\"'\"'/g")'"
     echo
   else
-    echo "   Creating user..."
-    TMP=$(mktemp); printf "%s" "$CREATE_PAYLOAD" > "$TMP"
-    run_in "wget -q --method=POST --header='Content-Type: application/json' --user='${KEY}' --password='${SECRET}' --body-file='-' -O - '${USERS_BASE}' < '$TMP'"
-    rm -f "$TMP"
+    echo "   Creating user."
+    run_in "curl -sS -u '${KEY}:${SECRET}' -X POST '${USERS_BASE}' -H 'Content-Type: application/json' -d '$(printf "%s" "$CREATE_PAYLOAD" | sed "s/'/'\"'\"'/g")'"
     echo
   fi
-fi
-
+}
 echo "✅ Done."
 echo "   MQTT can now authenticate with: -u '${USER_ID}' -P '<your password>'"
