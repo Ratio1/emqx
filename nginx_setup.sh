@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ipfs-nginx-setup.sh — secure nginx reverse-proxy for Kubo 0.35 API
+# ipfs-nginx-setup.sh â€” secure nginx reverse-proxy for Kubo 0.35 API
 # Usage: sudo ./ipfs-nginx-setup.sh [SERVER_IP] [USER] [PASS]
 set -euo pipefail
 
@@ -23,12 +23,12 @@ echo "==> Using public IP  $SERVER_IP"
 apt-get update -qq
 apt-get install -y nginx openssl apache2-utils  # htpasswd lives here :contentReference[oaicite:1]{index=1}
 
-# ---- Kill the port-80 �default� listener -------------------------------
+# ---- Kill the port-80 ï¿½defaultï¿½ listener -------------------------------
 rm -f /etc/nginx/sites-enabled/default
 
 ### ---- 3. Generate self-signed certificate -------------------------------
 if [[ ! -f "$LOCAL_CRT" || ! -f "$LOCAL_KEY" ]]; then
-  echo "==> Generating self-signed TLS certificate in $PWD �"
+  echo "==> Generating self-signed TLS certificate in $PWD ï¿½"
   openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
           -subj "/CN=${SERVER_IP}" \
           -addext "subjectAltName = DNS:${SERVER_IP},IP:${SERVER_IP}" \
@@ -40,8 +40,6 @@ install -Dm600 "$LOCAL_CRT" "$SYS_CRT"
 install -Dm600 "$LOCAL_KEY" "$SYS_KEY"
 echo "==> Installed certificate to $SYS_CRT"
 echo "==> Installed key         to $SYS_KEY"
-cp "$LOCAL_CRT" "/opt/emqx/etc/certs/emqx_cert.crt"
-cp "$LOCAL_KEY" "/opt/emqx/etc/certs/emqx_cert.key"
 
 
 
