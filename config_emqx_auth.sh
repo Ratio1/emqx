@@ -11,6 +11,7 @@ set -euo pipefail
 # ---- defaults ----
 CONTAINER="emqx"
 USER_ID="ratio1"
+ADMIN_USER="admin"
 PASSWORD=""
 USER_ID_TYPE="username"
 
@@ -88,3 +89,19 @@ curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${US
 }
 echo "? Done."
 echo "   MQTT can now authenticate with: -u '${USER_ID}' -P '<your password>'"
+
+exec_in() {
+  docker exec "${CONTAINER}" sh -lc "$*"
+}
+
+exec_in "emqx ctl admins passwd '${ADMIN_USER}' '${PASSWORD}'" >/dev/null \
+  && echo "Admin password updated."
+
+echo "Creating Dashboard user '${USER_ID}'..."
+if exec_in "emqx ctl admins add '${USER_ID}' '${PASSWORD}'" >/dev/null; then
+  echo "User '${USER_ID}' created."
+else
+  echo "User may already exist. Resetting its password..."
+  exec_in "emqx ctl admins passwd '${USER_ID}' '${PASSWORD}'" >/dev/null
+  echo "Password reset for '${USER_ID}'."
+fi
