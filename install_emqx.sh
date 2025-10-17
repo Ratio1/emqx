@@ -29,6 +29,5 @@ systemctl status emqx --no-pager -l
 
 #verify emqx docker ip address and update nginx config accordingly
 EMQX_DOCKER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' emqx)
-sed -i "s/proxy_pass http:\/\/172 .17.0.2:18083;/proxy_pass http:\/\/${EMQX_DOCKER_IP}:18083;/g" /etc/nginx/sites-available/emqx.conf     
+sed -i "s/proxy_pass http:\/\/172.17.0.2:18083;/proxy_pass http:\/\/${EMQX_DOCKER_IP}:18083;/g" /etc/nginx/sites-available/emqx.conf     
 systemctl reload nginx
-
