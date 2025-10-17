@@ -19,6 +19,20 @@ chmod 777 /opt/emqx/log
 mkdir -p /opt/emqx/data
 chmod 777 /opt/emqx/data
 
+# Make a random API key/secret (printable)
+API_KEY=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 16)
+API_SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48)
+
+mkdir -p /opt/emqx/etc
+cat >/opt/emqx/etc/default_api_key.conf <<EOF
+${API_KEY}:${API_SECRET}:administrator
+EOF
+
+# HOCON snippet to point to the bootstrap file
+cat >/opt/emqx/etc/api_key.hocon <<EOF
+api_key = { bootstrap_file = \"etc/default_api_key.conf\" }
+EOF
+
 
 # install_emqx.sh
 cp ./emqx.service /etc/systemd/system/emqx.service

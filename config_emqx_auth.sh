@@ -39,54 +39,10 @@ need docker
 # Ensure container is running
 docker inspect -f '{{.State.Running}}' "$CONTAINER" >/dev/null 2>&1 || die "Container '$CONTAINER' not found or not running."
 
-# Inside-container runner
-run_in() {
-  docker exec -i "$CONTAINER" sh -lc "$*"
-}
-
-# Ensure we can talk HTTP inside the container: need curl or wget
-ensure_http_client() {
-  if run_in 'command -v curl >/dev/null 2>&1'; then
-    echo "curl"
-    return
-  fi
-  if run_in 'command -v wget >/dev/null 2>&1'; then
-    echo "wget"
-    return
-  fi
-
-  echo "No curl/wget in container. Trying to install curl..." >&2
-  # Try common package managers. Some images are minimal; if none work, we bail out.
-  if run_in 'command -v apk >/dev/null 2>&1'; then
-    run_in 'apk add --no-cache curl' || die "Failed to install curl via apk"
-  elif run_in 'command -v apt-get >/dev/null 2>&1'; then
-    run_in 'apt-get update && apt-get install -y curl' || die "Failed to install curl via apt-get"
-  elif run_in 'command -v dnf >/dev/null 2>&1'; then
-    run_in 'dnf install -y curl' || die "Failed to install curl via dnf"
-  elif run_in 'command -v yum >/dev/null 2>&1'; then
-    run_in 'yum install -y curl' || die "Failed to install curl via yum"
-  else
-    die "No package manager found in container; install curl manually or expose 18083 and re-run."
-  fi
-  echo "curl"
-}
-
-HTTP_CLIENT=$(ensure_http_client)
-
-# Create API key
-echo ">> Creating EMQX API key..."
-API_OUT=$(run_in 'emqx ctl api-key create') || die "Failed to create API key"
-# Expected output lines like:
-# Key: xxxxxx
-# Secret: yyyyyy
-KEY=$(printf "%s\n" "$API_OUT" | awk '/^Key:/ {print $2}')
-SECRET=$(printf "%s\n" "$API_OUT" | awk '/^Secret:/ {print $2}')
-[[ -n "${KEY:-}" && -n "${SECRET:-}" ]] || die "Could not parse API key/secret from output:
-$API_OUT"
-
-echo "   Key: $KEY"
-echo "   Secret: (hidden)"
-
+#read API key/secret from /opt/emqx/etc/default_api_key.conf
+API_CRED=$(sh -c "cat /opt/emqx/etc/default_api_key.conf" | tr -d '\r\n')
+KEY=$(echo "$API_CRED" | cut -d: -f1)
+SECRET=$(echo "$API_CRED" | cut -d: -f2)
 
 AUTH_JSON=$(cat <<JSON
 {
