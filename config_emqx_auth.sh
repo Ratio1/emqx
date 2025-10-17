@@ -59,14 +59,14 @@ JSON
 EMQX_DOCKER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER})
 
 # URL-encoded ID for authenticator: "password_based:built_in_database" -> "password_based%3Abuilt_in_database"
-AUTH_URL='http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database'
-curl -sS -u '${KEY}:${SECRET}' -X PUT '${AUTH_URL}' -H 'Content-Type: application/json' -d '$(printf "%s" "$AUTH_JSON" | sed "s/'/'\"'\"'/g")'
+AUTH_URL="http://${EMQX_DOCKER_IP}:18083/api/v5/authentication"
+curl -sS -u "${KEY}:${SECRET}" -X POST "${AUTH_URL}" -H 'Content-Type: application/json' -d "${AUTH_JSON}"
 echo "   Authenticator applied."
 
 # Create or update user
-USERS_BASE='http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database/users'
+USERS_BASE="http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database/users"
 CREATE_PAYLOAD=$(cat <<JSON
-{"user_id":"${USER_ID}","password":"${PASSWORD}","is_superuser":${IS_SUPERUSER}}
+{"user_id":"${USER_ID}","password":"${PASSWORD}","is_superuser":"false"}
 JSON
 )
 
@@ -77,13 +77,14 @@ curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${US
   set -e
   if [[ "$CODE" = "200" ]]; then
     echo "   User exists; updating password/superuser flag."
-    run_in "curl -sS -u '${KEY}:${SECRET}' -X PUT '${USERS_BASE}/${USER_ID}' -H 'Content-Type: application/json' -d '$(printf "%s" "$CREATE_PAYLOAD" | sed "s/'/'\"'\"'/g")'"
+    curl -sS -u "${KEY}:${SECRET}" -X PUT "${USERS_BASE}/${USER_ID}" -H 'Content-Type: application/json' -d "${CREATE_PAYLOAD}"
     echo
   else
     echo "   Creating user."
-    run_in "curl -sS -u '${KEY}:${SECRET}' -X POST '${USERS_BASE}' -H 'Content-Type: application/json' -d '$(printf "%s" "$CREATE_PAYLOAD" | sed "s/'/'\"'\"'/g")'"
+    curl -sS -u "${KEY}:${SECRET}" -X POST "${USERS_BASE}" -H 'Content-Type: application/json' -d "${CREATE_PAYLOAD}"
+
     echo
   fi
 }
-echo "✅ Done."
+echo "? Done."
 echo "   MQTT can now authenticate with: -u '${USER_ID}' -P '<your password>'"

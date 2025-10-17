@@ -29,8 +29,9 @@ ${API_KEY}:${API_SECRET}:administrator
 EOF
 
 # HOCON snippet to point to the bootstrap file
-cat >/opt/emqx/etc/api_key.hocon <<EOF
-api_key = { bootstrap_file = \"etc/default_api_key.conf\" }
+cat >>/opt/emqx/etc/base.hocon <<EOF
+listeners.ssl.default.enable_authn = quick_deny_anonymous
+api_key = { bootstrap_file = "/opt/emqx/etc/default_api_key.conf" }
 EOF
 
 
