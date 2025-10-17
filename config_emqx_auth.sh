@@ -56,13 +56,15 @@ AUTH_JSON=$(cat <<JSON
 JSON
 )
 
+EMQX_DOCKER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER})
+
 # URL-encoded ID for authenticator: "password_based:built_in_database" -> "password_based%3Abuilt_in_database"
-AUTH_URL='http://127.0.0.1:18083/api/v5/authentication/password_based%3Abuilt_in_database'
+AUTH_URL='http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database'
 curl -sS -u '${KEY}:${SECRET}' -X PUT '${AUTH_URL}' -H 'Content-Type: application/json' -d '$(printf "%s" "$AUTH_JSON" | sed "s/'/'\"'\"'/g")'
 echo "   Authenticator applied."
 
 # Create or update user
-USERS_BASE='http://127.0.0.1:18083/api/v5/authentication/password_based%3Abuilt_in_database/users'
+USERS_BASE='http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database/users'
 CREATE_PAYLOAD=$(cat <<JSON
 {"user_id":"${USER_ID}","password":"${PASSWORD}","is_superuser":${IS_SUPERUSER}}
 JSON
