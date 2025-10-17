@@ -58,7 +58,7 @@ JSON
 
 # URL-encoded ID for authenticator: "password_based:built_in_database" -> "password_based%3Abuilt_in_database"
 AUTH_URL='http://127.0.0.1:18083/api/v5/authentication/password_based%3Abuilt_in_database'
-run_in "curl -sS -u '${KEY}:${SECRET}' -X PUT '${AUTH_URL}' -H 'Content-Type: application/json' -d '$(printf "%s" "$AUTH_JSON" | sed "s/'/'\"'\"'/g")'"
+curl -sS -u '${KEY}:${SECRET}' -X PUT '${AUTH_URL}' -H 'Content-Type: application/json' -d '$(printf "%s" "$AUTH_JSON" | sed "s/'/'\"'\"'/g")'
 echo "   Authenticator applied."
 
 # Create or update user
@@ -70,7 +70,7 @@ JSON
 
 echo ">> Creating or updating user '${USER_ID}'..."
 set +e
-run_in "curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${USER_ID}'" | {
+curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${USER_ID}' | {
   read -r CODE
   set -e
   if [[ "$CODE" = "200" ]]; then
