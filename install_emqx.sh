@@ -70,7 +70,8 @@ echo "Install emqx service..."
 
 # install_emqx.sh
 cp ./emqx.service /etc/systemd/system/emqx.service
-sed -i "s/network-alias emqx.local;/network-alias ${NODE_NAME}.local;/g" /etc/systemd/system/emqx.service
+#replace emqx.local with ${NODE_NAME}.local everywhere in /etc/systemd/system/emqx.service
+sed -i "s/emqx.local/${NODE_NAME}.local/g" /etc/systemd/system/emqx.service
 systemctl daemon-reload
 systemctl enable emqx
 systemctl start emqx
