@@ -11,6 +11,8 @@ ExecStartPre=/usr/bin/docker pull emqx/emqx:5.8.7
 # Run EMQX detached (-d) with restart policy and proper ports
 ExecStart=/usr/bin/docker run --rm -d --name emqx \
   -p 8883:8883 -p 8084:8084 \
+  --network fixednet18 --ip 172.18.0.2 \
+  --network-alias emqx.local \
   -v /opt/emqx/data:/opt/emqx/data \
   -v /opt/emqx/etc:/opt/emqx/etc \
   -v /opt/emqx/log:/opt/emqx/log \

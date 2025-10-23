@@ -1,5 +1,24 @@
 #!/bin/bash
 
+set -euo pipefail
+
+NODE_NAME=""
+
+# ---- args ----
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -n|--nodename) NODE_NAME="$2"; shift 2 ;;
+    -h|--help)
+      sed -n '1,50p' "$0"; exit 0 ;;
+    *) echo "Unknown arg: $1" >&2; exit 1 ;;
+  esac
+done
+
+if [[ -z "$NODE_NAME" ]]; then
+  echo "ERROR: --nodename is required." >&2
+  exit 1
+fi
+
 if [ ! -f /opt/emqx/etc/emqx.conf ]; then
   mkdir -p /opt/emqx
   docker create --name emqx-seed emqx/emqx:5.8.7
@@ -34,9 +53,19 @@ listeners.ssl.default.enable_authn = quick_deny_anonymous
 api_key = { bootstrap_file = "/opt/emqx/etc/default_api_key.conf" }
 EOF
 
+#create fixednet18 docker network if not exists
+if ! docker network ls --format '{{.Name}}' | grep -w fixednet18 >/dev/null 2>&1; then
+  echo "Creating docker network fixednet18 ..."
+  docker network create   \
+       --driver bridge  \
+       --subnet 172.18.0.0/24 \
+       --gateway 172.18.0.1 \
+      fixednet18
+fi
 
 # install_emqx.sh
 cp ./emqx.service /etc/systemd/system/emqx.service
+sed -i "s/network-alias emqx.local;/network-alias ${NODE_NAME}.local;/g" /etc/systemd/system/emqx.service
 systemctl daemon-reload
 systemctl enable emqx
 systemctl start emqx

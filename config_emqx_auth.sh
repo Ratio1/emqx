@@ -10,7 +10,6 @@ set -euo pipefail
 
 # ---- defaults ----
 CONTAINER="emqx"
-USER_ID="ratio1"
 ADMIN_USER="admin"
 PASSWORD=""
 USER_ID_TYPE="username"
@@ -19,7 +18,6 @@ USER_ID_TYPE="username"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -c|--container) CONTAINER="$2"; shift 2 ;;
-    -u|--user) USER_ID="$2"; shift 2 ;;
     -p|--password) PASSWORD="$2"; shift 2 ;;
     -h|--help)
       sed -n '1,50p' "$0"; exit 0 ;;
@@ -27,8 +25,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$USER_ID" || -z "$PASSWORD" ]]; then
-  echo "ERROR: --user and --password are required." >&2
+if [[ -z "$PASSWORD" ]]; then
+  echo "ERROR: --password is required." >&2
   exit 1
 fi
 
@@ -64,31 +62,42 @@ AUTH_URL="http://${EMQX_DOCKER_IP}:18083/api/v5/authentication"
 curl -sS -u "${KEY}:${SECRET}" -X POST "${AUTH_URL}" -H 'Content-Type: application/json' -d "${AUTH_JSON}"
 echo "   Authenticator applied."
 
-# Create or update user
-USERS_BASE="http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database/users"
+#create a function to create or update users
+create_or_update_user() {
+  local user_id="$1"
+  local password="$2"
+
+  # Create or update user
+  USERS_BASE="http://${EMQX_DOCKER_IP}:18083/api/v5/authentication/password_based%3Abuilt_in_database/users"
 CREATE_PAYLOAD=$(cat <<JSON
-{"user_id":"${USER_ID}","password":"${PASSWORD}","is_superuser":"false"}
+      {"user_id":"${user_id}","password":"${password}"}
 JSON
 )
 
-echo ">> Creating or updating user '${USER_ID}'..."
-set +e
-curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${USER_ID}' | {
-  read -r CODE
-  set -e
-  if [[ "$CODE" = "200" ]]; then
-    echo "   User exists; updating password/superuser flag."
-    curl -sS -u "${KEY}:${SECRET}" -X PUT "${USERS_BASE}/${USER_ID}" -H 'Content-Type: application/json' -d "${CREATE_PAYLOAD}"
-    echo
-  else
-    echo "   Creating user."
-    curl -sS -u "${KEY}:${SECRET}" -X POST "${USERS_BASE}" -H 'Content-Type: application/json' -d "${CREATE_PAYLOAD}"
+  echo ">> Creating or updating user '${user_id}'..."
+  set +e
+  curl -s -o /dev/null -w '%{http_code}' -u '${KEY}:${SECRET}' '${USERS_BASE}/${USER_ID}' | {
+    read -r CODE
+    set -e
+    if [[ "$CODE" = "200" ]]; then
+      echo "   User exists; updating password/superuser flag."
+      curl -sS -u "${KEY}:${SECRET}" -X PUT "${USERS_BASE}/${user_id}" -H 'Content-Type: application/json' -d "${CREATE_PAYLOAD}"
+      echo
+    else
+      echo "   Creating user."
+      curl -sS -u "${KEY}:${SECRET}" -X POST "${USERS_BASE}" -H 'Content-Type: application/json' -d "${CREATE_PAYLOAD}"
 
-    echo
-  fi
+      echo
+    fi
+  }
+  echo "? Done."
+  echo "   MQTT can now authenticate with: -u '${user_id}' -P '<your password>'"
 }
-echo "? Done."
-echo "   MQTT can now authenticate with: -u '${USER_ID}' -P '<your password>'"
+
+USER_ID="ratio1"
+create_or_update_user "${USER_ID}" "${PASSWORD}"
+USER_ID="bridge"
+create_or_update_user "${USER_ID}" "${PASSWORD}"
 
 exec_in() {
   docker exec "${CONTAINER}" sh -lc "$*"
