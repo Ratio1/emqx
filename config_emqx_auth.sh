@@ -94,9 +94,9 @@ JSON
   echo "   MQTT can now authenticate with: -u '${user_id}' -P '<your password>'"
 }
 
-USER_ID="ratio1"
-create_or_update_user "${USER_ID}" "${PASSWORD}"
 USER_ID="bridge"
+create_or_update_user "${USER_ID}" "${PASSWORD}"
+USER_ID="ratio1"
 create_or_update_user "${USER_ID}" "${PASSWORD}"
 
 exec_in() {

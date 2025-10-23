@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 NODE_NAME=""
 
 # ---- args ----
@@ -38,20 +36,25 @@ chmod 777 /opt/emqx/log
 mkdir -p /opt/emqx/data
 chmod 777 /opt/emqx/data
 
+echo "Creating API Secrets..."
 # Make a random API key/secret (printable)
 API_KEY=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 16)
 API_SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48)
+echo "API Key: $API_KEY"
+echo "API Secret: $API_SECRET"
 
-mkdir -p /opt/emqx/etc
+mkdir -p /opt/emqx/etc  
 cat >/opt/emqx/etc/default_api_key.conf <<EOF
 ${API_KEY}:${API_SECRET}:administrator
 EOF
+echo "Created /opt/emqx/etc/default_api_key.conf"
 
 # HOCON snippet to point to the bootstrap file
 cat >>/opt/emqx/etc/base.hocon <<EOF
 listeners.ssl.default.enable_authn = quick_deny_anonymous
 api_key = { bootstrap_file = "/opt/emqx/etc/default_api_key.conf" }
 EOF
+echo "Appended to /opt/emqx/etc/base.hocon"
 
 #create fixednet18 docker network if not exists
 if ! docker network ls --format '{{.Name}}' | grep -w fixednet18 >/dev/null 2>&1; then
@@ -62,6 +65,8 @@ if ! docker network ls --format '{{.Name}}' | grep -w fixednet18 >/dev/null 2>&1
        --gateway 172.18.0.1 \
       fixednet18
 fi
+
+echo "Install emqx service..."
 
 # install_emqx.sh
 cp ./emqx.service /etc/systemd/system/emqx.service
