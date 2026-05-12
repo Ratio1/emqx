@@ -4,3 +4,4 @@
 2. run `copy_db.sh <user>@<host>` to copy the database from a remote EMQX instance only if migration is needed
 3. run `nginx_setup.sh` to setup nginx
 4. run `install_emqx.sh` to install EMQX service
+5. run `config_emqx_auth.sh` to set emqx auth
